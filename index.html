@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Udit Singh · Space Engineer · Linear Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cyan: #00f5ff;
+    --magenta: #ff0080;
+    --panel-bg: rgba(0,8,20,0.92);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#000; }
+  body { cursor: none; }
+
+  #cursor, #cursor-dot { position:fixed; pointer-events:none; z-index:9999; }
+  #cursor { width:20px; height:20px; border:1px solid var(--cyan); border-radius:50%; transition:width 0.2s, height 0.2s; transform:translate(-50%,-50%); mix-blend-mode:screen; }
+  #cursor-dot { width:4px; height:4px; background:var(--cyan); border-radius:50%; box-shadow:0 0 8px var(--cyan); transform:translate(-50%,-50%); }
+  body.hovering #cursor { width:40px; height:40px; border-color:var(--magenta); border-width:2px; }
+
+  #canvas { position:fixed; top:0; left:0; width:100%; height:100%; }
+
+  #hud-top {
+    position:fixed; top:0; left:0; right:0; height:52px; z-index:100;
+    background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 32px; border-bottom:1px solid rgba(0,245,255,0.15);
+  }
+  .hud-logo { font-family:'Orbitron',monospace; font-size:13px; font-weight:900; letter-spacing:6px; color:var(--cyan); text-transform:uppercase; text-shadow:0 0 20px var(--cyan); }
+  .hud-logo span { color:white; }
+  .hud-status { font-family:'Share Tech Mono',monospace; font-size:11px; color:rgba(0,245,255,0.6); letter-spacing:2px; display:flex; gap:24px; align-items:center; }
+  .hud-dot { width:6px; height:6px; border-radius:50%; background:var(--cyan); box-shadow:0 0 8px var(--cyan); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  #hud-bottom {
+    position:fixed; bottom:0; left:0; right:0; height:44px; z-index:100;
+    background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+    border-top:1px solid rgba(0,245,255,0.1);
+    display:flex; align-items:center; padding:0 32px; gap:8px;
+  }
+  .hint-text { font-family:'Share Tech Mono',monospace; font-size:11px; color:rgba(255,255,255,0.35); letter-spacing:2px; }
+
+  #nav-dots {
+    position:fixed; right:28px; top:50%; transform:translateY(-50%); z-index:100;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .nav-dot {
+    width:8px; height:8px; border-radius:50%; border:1px solid rgba(0,245,255,0.4); cursor:pointer;
+    transition:all 0.3s; position:relative;
+  }
+  .nav-dot.active { background:var(--cyan); box-shadow:0 0 12px var(--cyan); }
+  .nav-dot:hover { border-color:var(--cyan); transform:scale(1.5); }
+  .nav-dot-label {
+    position:absolute; right:18px; top:50%; transform:translateY(-50%);
+    font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--cyan);
+    white-space:nowrap; opacity:0; transition:opacity 0.3s; pointer-events:none;
+    background:rgba(0,8,20,0.8); padding:2px 8px; border-radius:4px;
+  }
+  .nav-dot:hover .nav-dot-label { opacity:1; }
+
+  #project-panel {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:520px; max-width:90vw; max-height:82vh;
+    background:var(--panel-bg); border:1px solid rgba(0,245,255,0.4);
+    border-radius:8px; z-index:200; display:none; overflow-y:auto;
+    backdrop-filter:blur(12px);
+    box-shadow:0 0 60px rgba(0,245,255,0.15);
+  }
+  #project-panel.open { display:block; animation:panelIn 0.3s ease; }
+  @keyframes panelIn { from { opacity:0; transform:translate(-50%,-48%) scale(0.96); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+  .panel-header { padding:20px 24px 12px; border-bottom:1px solid rgba(0,245,255,0.2); }
+  .panel-category { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--cyan); letter-spacing:4px; margin-bottom:6px; }
+  .panel-title { font-family:'Orbitron',monospace; font-size:18px; font-weight:700; color:#fff; }
+  .panel-body { padding:16px 24px; }
+  .panel-img { width:100%; border-radius:8px; margin-bottom:16px; border:1px solid rgba(0,245,255,0.3); }
+  .panel-desc { font-family:'Space Grotesk',sans-serif; font-size:14px; line-height:1.6; color:rgba(255,255,255,0.8); margin-bottom:16px; }
+  .tech-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .tech-tag { font-family:'Share Tech Mono',monospace; font-size:10px; padding:4px 12px; border:1px solid rgba(0,245,255,0.4); color:var(--cyan); border-radius:20px; background:rgba(0,245,255,0.05); }
+  .panel-footer { padding:12px 24px 20px; display:flex; justify-content:flex-end; gap:16px; border-top:1px solid rgba(0,245,255,0.1); }
+  .panel-close, .panel-link { background:none; border:1px solid rgba(255,255,255,0.2); color:white; padding:6px 20px; border-radius:30px; cursor:pointer; font-family:'Orbitron',monospace; font-size:11px; transition:0.2s; text-decoration:none; }
+  .panel-link { background:linear-gradient(90deg,var(--cyan),#0080ff); color:#000; border:none; font-weight:bold; }
+  .panel-link:hover { transform:scale(1.02); box-shadow:0 0 12px var(--cyan); }
+  .panel-close:hover { border-color:var(--magenta); color:var(--magenta); }
+
+  #about-panel {
+    position:fixed; top:50%; right:60px; transform:translateY(-50%);
+    width:360px; max-height:80vh; overflow-y:auto;
+    background:var(--panel-bg); border:1px solid rgba(255,0,128,0.4);
+    border-radius:8px; z-index:200; display:none; padding:0;
+    backdrop-filter:blur(12px);
+  }
+  #about-panel.open { display:block; animation:panelIn 0.3s ease; }
+  .about-header { padding:18px 20px; border-bottom:1px solid rgba(255,0,128,0.2); font-family:'Orbitron',monospace; font-size:16px; color:#fff; }
+  .about-header span { color:var(--magenta); }
+  .about-body { padding:16px 20px; }
+  .about-row { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .about-label { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--magenta); letter-spacing:2px; margin-bottom:6px; }
+  .about-text { font-family:'Space Grotesk',sans-serif; font-size:13px; color:rgba(255,255,255,0.75); line-height:1.5; }
+  .about-text a { color:var(--cyan); text-decoration:none; }
+  .about-close { position:absolute; top:12px; right:16px; background:none; border:none; color:rgba(255,255,255,0.5); font-size:20px; cursor:pointer; }
+  .about-close:hover { color:var(--magenta); }
+
+  #loading {
+    position:fixed; inset:0; background:#000; z-index:500;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition:opacity 1s;
+  }
+  .load-ring { width:60px; height:60px; border:2px solid rgba(0,245,255,0.2); border-top-color:var(--cyan); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:20px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .load-title { font-family:'Orbitron',monospace; font-size:12px; letter-spacing:6px; color:var(--cyan); }
+
+  #about-btn {
+    position:fixed; top:50%; left:28px; transform:translateY(-50%); z-index:100;
+    background:none; border:1px solid rgba(255,0,128,0.4); color:rgba(255,0,128,0.8);
+    font-family:'Orbitron',monospace; font-size:10px; font-weight:700; padding:10px 6px;
+    writing-mode:vertical-rl; cursor:pointer; transition:0.3s;
+  }
+  #about-btn:hover { border-color:var(--magenta); color:var(--magenta); box-shadow:0 0 20px rgba(255,0,128,0.3); }
+
+  #coords {
+    position:fixed; bottom:52px; left:28px; z-index:100;
+    font-family:'Share Tech Mono',monospace; font-size:10px;
+    color:rgba(0,245,255,0.3); line-height:1.6;
+  }
+
+  @media(max-width:600px) {
+    #project-panel { width:94vw; }
+    #about-panel { width:88vw; right:50%; transform:translate(50%,-50%); }
+    #nav-dots { right:12px; }
+    #coords { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-dot"></div>
+<div id="loading"><div class="load-ring"></div><div class="load-title">INITIALIZING SPACE PORTFOLIO</div></div>
+
+<div id="hud-top"><div class="hud-logo">U.<span>SINGH</span></div><div class="hud-status"><div class="hud-dot"></div><span>SPACE ENGINEERING</span><span>|</span><span id="time-display"></span></div></div>
+<canvas id="canvas"></canvas>
+<div id="hud-bottom"><div class="hint-text">// CLICK ON ANY SPACECRAFT · DRAG TO TRAVEL · SCROLL TO ZOOM</div></div>
+
+<div id="nav-dots">
+  <div class="nav-dot active" data-idx="0"><div class="nav-dot-label">ToulouseEye</div></div>
+  <div class="nav-dot" data-idx="1"><div class="nav-dot-label">Thruster CFD</div></div>
+  <div class="nav-dot" data-idx="2"><div class="nav-dot-label">Space Safety</div></div>
+  <div class="nav-dot" data-idx="3"><div class="nav-dot-label">Lunar Thermal</div></div>
+</div>
+<button id="about-btn">ABOUT ME</button>
+<div id="coords"><div id="coord-x">RA: 00h 00m 00s</div><div id="coord-y">DEC: +00° 00' 00"</div></div>
+
+<div id="project-panel">
+  <div class="panel-header"><div class="panel-category" id="panel-cat">PROJECT</div><div class="panel-title" id="panel-title">Title</div></div>
+  <div class="panel-body" id="panel-body"></div>
+  <div class="panel-footer"><button class="panel-close" id="closePanelBtn">CLOSE</button><a href="#" id="panel-link" class="panel-link" target="_blank">VIEW PROJECT →</a></div>
+</div>
+
+<div id="about-panel">
+  <div class="about-header"><span>◈</span> UDIT SINGH<br><span style="font-size:10px;opacity:0.6">MSc SPACE ENGINEERING</span></div>
+  <button class="about-close" id="closeAboutBtn">×</button>
+  <div class="about-body">
+    <div class="about-row"><div class="about-label">CONTACT</div><div class="about-text">📧 udit@uni-bremen.de<br>📍 Bremen, Germany</div></div>
+    <div class="about-row"><div class="about-label">EDUCATION</div><div class="about-text">MSc Space Engineering, Universität Bremen (2025–present)<br>B.E. Industrial & Production Engineering (2.1 German Grade)</div></div>
+    <div class="about-row"><div class="about-label">EXPERIENCE</div><div class="about-text">Intern @ Muon Technologies (Python automation) · CubeSat System Design · ISRO SAR Pipeline (+30% clarity) · Sustainable Satellite Materials</div></div>
+    <div class="about-row"><div class="about-label">SKILLS</div><div class="about-text">ECSS · AIT · Ansys FEA · SolidWorks · CATIA · Creo · Autodesk Fusion · Python · Agile/Scrum</div></div>
+    <div class="about-row"><div class="about-label">LANGUAGES</div><div class="about-text">English (C1) · German (B1) · Hindi (Native)</div></div>
+    <div class="about-row"><div class="about-label">ACHIEVEMENTS</div><div class="about-text">Russia Open Doors Scholarship (2024) · Türkiye Bursları (2016) · Published EV ATV research · Led 23‑member E‑BAJA team</div></div>
+    <div class="about-row"><div class="about-label">CONNECT</div><div class="about-text"><a href="https://linkedin.com/in/uditsingh11" target="_blank">linkedin.com/in/uditsingh11 →</a></div></div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// --- setup ---
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.setPixelRatio(window.devicePixelRatio);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x010518);
+scene.fog = new THREE.FogExp2(0x010518, 0.003);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(4, 2, 8);
+camera.lookAt(0, 0, 0);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.autoRotate = false;
+controls.enablePan = true;
+controls.panSpeed = 0.8;
+controls.zoomSpeed = 1.2;
+controls.target.set(0, 0.2, 0);
+
+// CSS2 renderer for labels
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0px';
+labelRenderer.domElement.style.left = '0px';
+labelRenderer.domElement.style.pointerEvents = 'none';
+document.body.appendChild(labelRenderer.domElement);
+
+// --- Lighting ---
+scene.add(new THREE.AmbientLight(0x22223b));
+const mainLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+mainLight.position.set(5, 10, 7);
+mainLight.castShadow = true;
+mainLight.receiveShadow = false;
+scene.add(mainLight);
+const fillLight = new THREE.PointLight(0x4488ff, 0.4);
+fillLight.position.set(-2, 1, 3);
+scene.add(fillLight);
+const backLight = new THREE.PointLight(0xff8844, 0.3);
+backLight.position.set(1, 1, -5);
+scene.add(backLight);
+
+// --- Starfield (simple but effective) ---
+const starGeometry = new THREE.BufferGeometry();
+const starCount = 2000;
+const starPositions = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount; i++) {
+  starPositions[i*3] = (Math.random() - 0.5) * 200;
+  starPositions[i*3+1] = (Math.random() - 0.5) * 100;
+  starPositions[i*3+2] = (Math.random() - 0.5) * 100 - 50;
+}
+starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.6 });
+const stars = new THREE.Points(starGeometry, starMaterial);
+scene.add(stars);
+
+// --- Grid floor (tech vibe) ---
+const gridHelper = new THREE.GridHelper(25, 30, 0x33aaff, 0x2277aa);
+gridHelper.position.y = -1.5;
+gridHelper.material.transparent = true;
+gridHelper.material.opacity = 0.2;
+scene.add(gridHelper);
+
+// --- Project data ---
+const PROJECTS = [
+  { id:'toulouseeye', category:'STRUCTURAL · CUBESAT', title:'ToulouseEye: Payload Bracket',
+    desc:'Flight-ready payload bracket for a 3U Earth observation CubeSat (10 m GSD from 500 km LEO). Withstands 12 g launch loads, maintains optical alignment within 0.1°, and conducts camera heat below 60 °C. Designed in SolidWorks, analysed in Ansys Workbench. AL6061-T6, mass-optimised with lightening pockets. Safety factor >15, first modal frequency 5299 Hz.',
+    tech:['SolidWorks','Ansys','Modal','Thermal','AL6061'],
+    link:'https://github.com/yourusername/toulouseeye-bracket', color:0x3a86ff, pos:{ x:-4.0, y:0.2, z:0 }, type:'cubesat' },
+  { id:'thruster', category:'CFD · MULTI-PHYSICS', title:'Thruster Plume Backflow Analysis',
+    desc:'A PoC bridging continuum (CFD) and rarefied (DSMC) flow simulations. SimFlow/OpenFOAM for near-field, openPlumeCP for far-field backflow, MATLAB for coupling & validation. Demonstrated particle wrapping around a 0.5 mm nozzle lip causing spacecraft contamination.',
+    tech:['OpenFOAM','DSMC','MATLAB','SolidWorks'], link:'https://github.com/yourusername/thruster-backflow', color:0xff6600, pos:{ x:-1.5, y:0.2, z:0 }, type:'thruster' },
+  { id:'safety', category:'SOFTWARE · MISSION', title:'Space Safety Mission Control',
+    desc:'Interactive dashboard for collision probability, conjunction analysis, Clohessy-Wiltshire relative motion, tumbling debris capture (Euler\'s equations), AI-based risk forecasting, and mission-level recommendations. Built with Streamlit, Plotly, NumPy, SciPy. Deployed live: Reduces risk assessment from hours to seconds. Click on view project for more.',
+    tech:['Streamlit','Plotly','NumPy','SciPy'], link:'https://space-safety.streamlit.app/', color:0x00ddaa, pos:{ x:1.2, y:0.1, z:0 }, type:'station' },
+  { id:'lunar', category:'THERMAL · CFD', title:'Lunar Night Thermal Survival',
+    desc:'Passive thermal control for lunar electronics during a 14-day night (336 h) using conjugate heat transfer in SimFlow. MLI blanket (ε=0.05) maintained component core at 255 K — 12% above failure threshold. Proved passive survival without active heating, saving mass and power budget for future lunar missions.',
+    tech:['SimFlow','OpenFOAM','CHT','ParaView'], link:'https://github.com/yourusername/lunar-thermal', color:0xaa44ff, pos:{ x:3.8, y:-0.1, z:0 }, type:'lunar' }
+];
+
+// --- Helpers for labels ---
+function makeLabel(text, colorHex) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  div.style.backgroundColor = 'rgba(0,0,0,0.7)';
+  div.style.color = '#fff';
+  div.style.fontFamily = 'Orbitron, monospace';
+  div.style.fontSize = '12px';
+  div.style.fontWeight = 'bold';
+  div.style.padding = '4px 12px';
+  div.style.borderRadius = '20px';
+  div.style.borderLeft = `3px solid ${colorHex}`;
+  div.style.backdropFilter = 'blur(4px)';
+  div.style.whiteSpace = 'nowrap';
+  return new CSS2DObject(div);
+}
+
+// --- Build 3D objects ---
+const clickables = [];
+
+function buildCubesat(proj) {
+  const group = new THREE.Group();
+  const core = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.8), new THREE.MeshStandardMaterial({ color:0x1a2a4a, metalness:0.8, roughness:0.2, emissive:0x112233, emissiveIntensity:0.2 }));
+  core.castShadow = true;
+  group.add(core);
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.05,0.7), new THREE.MeshStandardMaterial({ color:0x88aaff, metalness:0.9 }));
+  const leftWing = wing.clone(); leftWing.position.set(-0.65,0,0);
+  const rightWing = wing.clone(); rightWing.position.set(0.65,0,0);
+  group.add(leftWing, rightWing);
+  // antenna
+  const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.5,6), new THREE.MeshStandardMaterial({ color:0xccccaa, metalness:0.7 }));
+  ant.position.set(0,0.55,0.1);
+  group.add(ant);
+  group.position.set(proj.pos.x, proj.pos.y, proj.pos.z);
+  scene.add(group);
+  // glow effect
+  const glowMat = new THREE.MeshBasicMaterial({ color:proj.color, transparent:true, opacity:0.3, side:THREE.BackSide });
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(0.95,16,16), glowMat);
+  group.add(glow);
+  // label
+  const label = makeLabel('ToulouseEye', '#3a86ff');
+  label.position.set(proj.pos.x, proj.pos.y+0.9, proj.pos.z);
+  scene.add(label);
+  group.userData = { proj, floatOffset: Math.random()*Math.PI*2 };
+  clickables.push(group);
+  return group;
+}
+
+function buildThruster(proj) {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.65,1.0,24), new THREE.MeshStandardMaterial({ color:0x444466, metalness:0.85, roughness:0.3 }));
+  body.castShadow = true;
+  group.add(body);
+  const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.55,0.4,24), new THREE.MeshStandardMaterial({ color:0xcc8844, metalness:0.9 }));
+  nozzle.position.y = -0.65;
+  group.add(nozzle);
+  group.position.set(proj.pos.x, proj.pos.y, proj.pos.z);
+  scene.add(group);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(1.0,16,16), new THREE.MeshBasicMaterial({ color:proj.color, transparent:true, opacity:0.25, side:THREE.BackSide }));
+  group.add(glow);
+  const label = makeLabel('Thruster CFD', '#ff6600');
+  label.position.set(proj.pos.x, proj.pos.y+0.9, proj.pos.z);
+  scene.add(label);
+  group.userData = { proj, floatOffset: Math.random()*Math.PI*2 };
+  clickables.push(group);
+  return group;
+}
+
+function buildStation(proj) {
+  const group = new THREE.Group();
+  const hub = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5,0), new THREE.MeshStandardMaterial({ color:0x33aa88, metalness:0.7, emissive:0x004466, emissiveIntensity:0.2 }));
+  hub.castShadow = true;
+  group.add(hub);
+  for (let i=0; i<3; i++) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,1.2), new THREE.MeshStandardMaterial({ color:0xaaccdd, metalness:0.8 }));
+    arm.rotation.y = i * Math.PI*2/3;
+    arm.position.set(Math.sin(i*Math.PI*2/3)*0.7, 0, Math.cos(i*Math.PI*2/3)*0.7);
+    group.add(arm);
+    const solar = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.03,0.25), new THREE.MeshStandardMaterial({ color:0x2266aa, emissive:0x113355, emissiveIntensity:0.3 }));
+    solar.position.set(Math.sin(i*Math.PI*2/3)*1.25, 0, Math.cos(i*Math.PI*2/3)*1.25);
+    group.add(solar);
+  }
+  group.position.set(proj.pos.x, proj.pos.y, proj.pos.z);
+  scene.add(group);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(0.85,16,16), new THREE.MeshBasicMaterial({ color:proj.color, transparent:true, opacity:0.25, side:THREE.BackSide }));
+  group.add(glow);
+  const label = makeLabel('Space Safety', '#00ddaa');
+  label.position.set(proj.pos.x, proj.pos.y+0.9, proj.pos.z);
+  scene.add(label);
+  group.userData = { proj, floatOffset: Math.random()*Math.PI*2 };
+  clickables.push(group);
+  return group;
+}
+
+function buildLunar(proj) {
+  const group = new THREE.Group();
+  const lander = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6), new THREE.MeshStandardMaterial({ color:0xaa88aa, metalness:0.3, roughness:0.6 }));
+  lander.castShadow = true;
+  group.add(lander);
+  for (let i=0; i<4; i++) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.08,0.5,6), new THREE.MeshStandardMaterial({ color:0xccaa88, metalness:0.5 }));
+    const angle = i * Math.PI/2;
+    leg.position.set(Math.cos(angle)*0.65, -0.45, Math.sin(angle)*0.65);
+    group.add(leg);
+  }
+  group.position.set(proj.pos.x, proj.pos.y, proj.pos.z);
+  scene.add(group);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(0.9,16,16), new THREE.MeshBasicMaterial({ color:proj.color, transparent:true, opacity:0.2, side:THREE.BackSide }));
+  group.add(glow);
+  const label = makeLabel('Lunar Thermal', '#aa44ff');
+  label.position.set(proj.pos.x, proj.pos.y+0.9, proj.pos.z);
+  scene.add(label);
+  group.userData = { proj, floatOffset: Math.random()*Math.PI*2 };
+  clickables.push(group);
+  return group;
+}
+
+// Build all
+PROJECTS.forEach(p => {
+  if (p.type === 'cubesat') buildCubesat(p);
+  else if (p.type === 'thruster') buildThruster(p);
+  else if (p.type === 'station') buildStation(p);
+  else if (p.type === 'lunar') buildLunar(p);
+});
+
+// About sphere
+const aboutSphere = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 32), new THREE.MeshStandardMaterial({ color:0xff44cc, emissive:0xff44aa, emissiveIntensity:0.4, metalness:0.2 }));
+aboutSphere.position.set(-5.8, 0.2, 0);
+scene.add(aboutSphere);
+const aboutLabel = makeLabel('ABOUT ME', '#ff44cc');
+aboutLabel.position.set(-5.8, 1.0, 0);
+scene.add(aboutLabel);
+aboutSphere.userData = { isAbout: true, floatOffset: Math.random()*Math.PI*2 };
+clickables.push(aboutSphere);
+
+// --- Raycaster & UI ---
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let hoveredObj = null;
+let isPanelClick = false;
+
+function getParentClickable(obj) {
+  while (obj && !clickables.includes(obj)) obj = obj.parent;
+  return obj;
+}
+
+canvas.addEventListener('click', (e) => {
+  if (isPanelClick) return;
+  mouse.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
+  mouse.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children, true);
+  for (const hit of intersects) {
+    const clickable = getParentClickable(hit.object);
+    if (clickable) {
+      if (clickable.userData.isAbout) showAboutPanel();
+      else if (clickable.userData.proj) openProjectPanel(clickable.userData.proj);
+      return;
+    }
+  }
+  closePanel();
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  mouse.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
+  mouse.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children, true);
+  let found = null;
+  for (const hit of intersects) {
+    const clickable = getParentClickable(hit.object);
+    if (clickable) { found = clickable; break; }
+  }
+  if (found !== hoveredObj) {
+    if (hoveredObj) hoveredObj.scale.setScalar(1);
+    hoveredObj = found;
+    if (hoveredObj) hoveredObj.scale.setScalar(1.08);
+  }
+  document.body.classList.toggle('hovering', !!found);
+});
+
+document.getElementById('project-panel').addEventListener('mousedown', () => isPanelClick = true);
+document.addEventListener('mouseup', () => isPanelClick = false);
+
+function openProjectPanel(proj) {
+  document.getElementById('panel-cat').textContent = proj.category;
+  document.getElementById('panel-title').textContent = proj.title;
+  const imgHtml = `<img class="panel-img" src="screenshots/${proj.id}.jpg" onerror="this.style.display='none'" alt="${proj.title}">`;
+  const techHtml = `<div class="tech-row">${proj.tech.map(t=>`<span class="tech-tag">${t}</span>`).join('')}</div>`;
+  document.getElementById('panel-body').innerHTML = imgHtml + `<div class="panel-desc">${proj.desc}</div>` + techHtml;
+  document.getElementById('panel-link').href = proj.link;
+  document.getElementById('project-panel').classList.add('open');
+  document.getElementById('about-panel').classList.remove('open');
+}
+
+function closePanel() {
+  document.getElementById('project-panel').classList.remove('open');
+  document.getElementById('about-panel').classList.remove('open');
+}
+
+function showAboutPanel() {
+  document.getElementById('about-panel').classList.add('open');
+  document.getElementById('project-panel').classList.remove('open');
+}
+
+document.getElementById('closePanelBtn').addEventListener('click', closePanel);
+document.getElementById('closeAboutBtn').addEventListener('click', closePanel);
+document.getElementById('about-btn').addEventListener('click', showAboutPanel);
+
+// Nav dots
+document.querySelectorAll('.nav-dot').forEach((dot, idx) => {
+  dot.addEventListener('click', () => {
+    const proj = PROJECTS[idx];
+    document.querySelectorAll('.nav-dot').forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+    controls.target.set(proj.pos.x, proj.pos.y, proj.pos.z);
+    camera.position.set(proj.pos.x + 1.5, proj.pos.y + 1.2, proj.pos.z + 5);
+  });
+});
+
+// --- Time & Coords ---
+setInterval(() => {
+  document.getElementById('time-display').textContent = new Date().toISOString().replace('T',' ').slice(0,19)+' UTC';
+}, 1000);
+
+const coordX = document.getElementById('coord-x');
+const coordY = document.getElementById('coord-y');
+function toDMS(deg, isRA) {
+  const abs = Math.abs(deg);
+  const h = Math.floor(isRA ? abs/15 : abs);
+  const m = Math.floor((abs - h*(isRA?15:1))*60/(isRA?15:1));
+  const s = Math.floor((abs - (h*(isRA?15:1) + m/60)*(isRA?15:1))*3600/(isRA?15:1));
+  return isRA ? `${h}h ${m}m ${s}s` : `${deg>=0?'+':'-'}${h}° ${m}' ${s}"`;
+}
+
+// --- Cursor ---
+const cursorEl = document.getElementById('cursor');
+const cursorDot = document.getElementById('cursor-dot');
+let cx=0, cy=0;
+document.addEventListener('mousemove', e => { cx=e.clientX; cy=e.clientY; cursorDot.style.left=cx+'px'; cursorDot.style.top=cy+'px'; });
+function updateCursor() { cursorEl.style.left=cx+'px'; cursorEl.style.top=cy+'px'; requestAnimationFrame(updateCursor); }
+updateCursor();
+
+// --- Loading screen ---
+setTimeout(() => {
+  const loading = document.getElementById('loading');
+  if (loading) { loading.style.opacity = '0'; setTimeout(() => loading.style.display = 'none', 800); }
+}, 1500);
+
+// --- Animation ---
+let time = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.012;
+  // Rotate stars slightly
+  stars.rotation.y += 0.0005;
+  stars.rotation.x += 0.0003;
+  // Floating objects
+  clickables.forEach(obj => {
+    const off = obj.userData.floatOffset || 0;
+    obj.position.y += Math.sin(time * 1.2 + off) * 0.002;
+    obj.rotation.y = time * 0.3 + off;
+  });
+  // Coordinates
+  const az = (Math.atan2(camera.position.x, camera.position.z) * 180/Math.PI + 360) % 360;
+  const el = Math.atan2(camera.position.y, Math.sqrt(camera.position.x**2 + camera.position.z**2)) * 180/Math.PI;
+  coordX.textContent = 'RA: '+toDMS(az, true);
+  coordY.textContent = 'DEC: '+toDMS(el, false);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
