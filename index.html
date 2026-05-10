@@ -324,7 +324,7 @@ const PROJECTS = [
     desc:'Flight-ready payload bracket for a 3U Earth observation CubeSat (10 m GSD from 500 km LEO). Withstands 12 g launch loads, maintains optical alignment within 0.1°, and conducts camera heat below 60 °C. Designed in SolidWorks, analysed in Ansys Workbench. AL6061-T6, mass-optimised with lightening pockets. Safety factor >15, first modal frequency 5299 Hz.',
     tech:['SolidWorks','Ansys','Modal','Thermal','AL6061'],
     externalLink: null,
-    images: ['details/toulouseeye_cad.png'],
+    images: ['details/toulouseeye_cad.png','toulouseeye_fea_stress.png','toulouseeye_modal.png','toulouseeye_thermal.png'],
     color:0x3a86ff, pos:{ x:-4.0, y:0.2, z:0 }, type:'cubesat' },
   { id:'thruster', category:'CFD · MULTI-PHYSICS', title:'Thruster Plume Backflow Analysis',
     desc:'A PoC bridging continuum (CFD) and rarefied (DSMC) flow simulations. SimFlow/OpenFOAM for near-field, openPlumeCP for far-field backflow, MATLAB for coupling & validation. Demonstrated particle wrapping around a 0.5 mm nozzle lip causing spacecraft contamination.',
