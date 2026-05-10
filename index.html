@@ -323,7 +323,7 @@ const PROJECTS = [
   { id:'toulouseeye', category:'STRUCTURAL · CUBESAT', title:'ToulouseEye: Payload Bracket',
     desc:'Flight-ready payload bracket for a 3U Earth observation CubeSat (10 m GSD from 500 km LEO). Withstands 12 g launch loads, maintains optical alignment within 0.1°, and conducts camera heat below 60 °C. Designed in SolidWorks, analysed in Ansys Workbench. AL6061-T6, mass-optimised with lightening pockets. Safety factor >15, first modal frequency 5299 Hz.',
     tech:['SolidWorks','Ansys','Modal','Thermal','AL6061'],
-    externalLink: null, // not used for external
+    externalLink: null,
     images: ['details/toulouseeye_cad.png'],
     color:0x3a86ff, pos:{ x:-4.0, y:0.2, z:0 }, type:'cubesat' },
   { id:'thruster', category:'CFD · MULTI-PHYSICS', title:'Thruster Plume Backflow Analysis',
@@ -502,9 +502,13 @@ function handleInteraction(clientX, clientY) {
   for (const hit of intersects) {
     const clickable = getParentClickable(hit.object);
     if (clickable) {
-      if (clickable.userData.isAbout) showAboutPanel();
-      else if (clickable.userData.proj) openProjectPanel(clickable.userData.proj);
-      return;
+      if (clickable.userData.isAbout) {
+        showAboutPanel();
+        return;
+      } else if (clickable.userData.proj) {
+        openProjectPanel(clickable.userData.proj);
+        return;
+      }
     }
   }
   closePanel();
@@ -564,11 +568,14 @@ function openProjectPanel(proj) {
 function closePanel() {
   document.getElementById('project-panel').classList.remove('open');
   document.getElementById('about-panel').classList.remove('open');
+  document.getElementById('gallery-modal').classList.remove('open');
 }
 
 function showAboutPanel() {
+  // Ensure that the about panel is displayed and other panels are hidden
   document.getElementById('about-panel').classList.add('open');
   document.getElementById('project-panel').classList.remove('open');
+  document.getElementById('gallery-modal').classList.remove('open');
 }
 
 function showGallery(proj) {
