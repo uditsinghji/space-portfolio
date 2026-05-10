@@ -15,16 +15,19 @@
   * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
   html, body { width:100%; height:100%; overflow:hidden; background:#000; touch-action: pan-x pan-y; }
 
-  /* Custom cursor - always on desktop, hidden on touch */
-  #cursor, #cursor-dot { position:fixed; pointer-events:none; z-index:9999; }
-  #cursor { width:20px; height:20px; border:1px solid var(--cyan); border-radius:50%; transition:width 0.2s, height 0.2s; transform:translate(-50%,-50%); mix-blend-mode:screen; }
-  #cursor-dot { width:4px; height:4px; background:var(--cyan); border-radius:50%; box-shadow:0 0 8px var(--cyan); transform:translate(-50%,-50%); }
-  body.hovering #cursor { width:40px; height:40px; border-color:var(--magenta); border-width:2px; }
+  /* Desktop cursor (visible on hover-capable devices) */
+  @media (hover: hover) {
+    body { cursor: none; }
+    #cursor, #cursor-dot { position:fixed; pointer-events:none; z-index:9999; }
+    #cursor { width:20px; height:20px; border:1px solid var(--cyan); border-radius:50%; transition:width 0.2s, height 0.2s; transform:translate(-50%,-50%); mix-blend-mode:screen; }
+    #cursor-dot { width:4px; height:4px; background:var(--cyan); border-radius:50%; box-shadow:0 0 8px var(--cyan); transform:translate(-50%,-50%); }
+    body.hovering #cursor { width:40px; height:40px; border-color:var(--magenta); border-width:2px; }
+  }
   @media (pointer: coarse) { #cursor, #cursor-dot { display:none; } }
 
   #canvas { position:fixed; top:0; left:0; width:100%; height:100%; }
 
-  /* all other styles remain exactly as before (no changes) */
+  /* HUD styles (unchanged) */
   #hud-top {
     position:fixed; top:0; left:0; right:0; height:52px; z-index:100;
     background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
@@ -164,8 +167,7 @@
   }
   .gallery-grid img {
     width:100%; border-radius:12px; border:1px solid rgba(0,245,255,0.3);
-    transition:transform 0.2s;
-    cursor:pointer;
+    transition:transform 0.2s; cursor:pointer;
   }
   .gallery-grid img:hover { transform:scale(1.02); }
   .close-gallery {
@@ -241,10 +243,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-// --- Mobile detection -------------------------------------------------
+// --- Mobile detection & performance tuning ---
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-const starCount = isMobile ? 1000 : 2000;
-const starSize = isMobile ? 0.1 : 0.15;
+// Reduced star counts for better performance
+const starCount = isMobile ? 600 : 1200;
+const starSize = isMobile ? 0.08 : 0.12;
 const pixelRatio = isMobile ? Math.min(window.devicePixelRatio, 1.5) : window.devicePixelRatio;
 
 // --- setup ------------------------------------------------------------
@@ -252,11 +255,12 @@ const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // softer shadows
 renderer.setPixelRatio(pixelRatio);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x010518);
-scene.fog = new THREE.FogExp2(0x010518, 0.003);
+scene.fog = new THREE.FogExp2(0x010518, 0.004); // slightly reduced fog for clarity
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 if (isMobile) {
@@ -298,7 +302,7 @@ const backLight = new THREE.PointLight(0xff8844, 0.3);
 backLight.position.set(1, 1, -5);
 scene.add(backLight);
 
-// --- Starfield --------------------------------------------------------
+// --- Starfield (optimized) -------------------------------------------
 const starGeometry = new THREE.BufferGeometry();
 const starPositions = new Float32Array(starCount * 3);
 for (let i = 0; i < starCount; i++) {
@@ -318,13 +322,18 @@ gridHelper.material.transparent = true;
 gridHelper.material.opacity = 0.2;
 scene.add(gridHelper);
 
-// --- Project data with images for gallery ----------------------------
+// --- Project data with images for gallery (fixed ToulouseEye) --------
 const PROJECTS = [
   { id:'toulouseeye', category:'STRUCTURAL · CUBESAT', title:'ToulouseEye: Payload Bracket',
     desc:'Flight-ready payload bracket for a 3U Earth observation CubeSat (10 m GSD from 500 km LEO). Withstands 12 g launch loads, maintains optical alignment within 0.1°, and conducts camera heat below 60 °C. Designed in SolidWorks, analysed in Ansys Workbench. AL6061-T6, mass-optimised with lightening pockets. Safety factor >15, first modal frequency 5299 Hz.',
     tech:['SolidWorks','Ansys','Modal','Thermal','AL6061'],
     externalLink: null,
-    images: ['details/toulouseeye_cad.png','toulouseeye_fea_stress.png','toulouseeye_modal.png','toulouseeye_thermal.png'],
+    // THREE IMAGES: CAD, FEA stress, thermal profile – adjust filenames to match your actual files
+    images: [
+      'details/toulouseeye_cad.png',
+      'details/toulouseeye_fea.png',
+      'details/toulouseeye_thermal.png'
+    ],
     color:0x3a86ff, pos:{ x:-4.0, y:0.2, z:0 }, type:'cubesat' },
   { id:'thruster', category:'CFD · MULTI-PHYSICS', title:'Thruster Plume Backflow Analysis',
     desc:'A PoC bridging continuum (CFD) and rarefied (DSMC) flow simulations. SimFlow/OpenFOAM for near-field, openPlumeCP for far-field backflow, MATLAB for coupling & validation. Demonstrated particle wrapping around a 0.5 mm nozzle lip causing spacecraft contamination.',
@@ -353,7 +362,7 @@ const PROJECTS = [
     color:0xaa44ff, pos:{ x:3.8, y:-0.1, z:0 }, type:'lunar' }
 ];
 
-// --- Helpers for labels (mobile‑sized) -------------------------------
+// --- Helper: make label (mobile‑sized) -------------------------------
 function makeLabel(text, colorHex) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -370,7 +379,7 @@ function makeLabel(text, colorHex) {
   return new CSS2DObject(div);
 }
 
-// --- Build 3D objects ------------------------------------------------
+// --- Build 3D objects (unchanged, kept functional) -------------------
 const clickables = [];
 
 function buildCubesat(proj) {
@@ -563,6 +572,7 @@ function openProjectPanel(proj) {
   };
   document.getElementById('project-panel').classList.add('open');
   document.getElementById('about-panel').classList.remove('open');
+  document.getElementById('gallery-modal').classList.remove('open');
 }
 
 function closePanel() {
@@ -587,9 +597,10 @@ function showGallery(proj) {
       const img = document.createElement('img');
       img.src = imgSrc;
       img.alt = proj.title;
-      // Log errors to console for debugging
-      img.onerror = () => { console.warn('Failed to load image:', imgSrc); img.style.display = 'none'; };
-      img.onload = () => { console.log('Loaded:', imgSrc); };
+      img.onerror = () => {
+        console.warn(`Image not found: ${imgSrc}`);
+        img.style.display = 'none';
+      };
       grid.appendChild(img);
     });
   }
@@ -637,13 +648,14 @@ function toDMS(deg, isRA) {
 }
 
 // --- Cursor (only on desktop) ----------------------------------------
-// No need for conditional because CSS already hides on touch
-const cursorEl = document.getElementById('cursor');
-const cursorDot = document.getElementById('cursor-dot');
-let cx=0, cy=0;
-document.addEventListener('mousemove', e => { cx=e.clientX; cy=e.clientY; cursorDot.style.left=cx+'px'; cursorDot.style.top=cy+'px'; });
-function updateCursor() { cursorEl.style.left=cx+'px'; cursorEl.style.top=cy+'px'; requestAnimationFrame(updateCursor); }
-updateCursor();
+if (window.matchMedia('(hover: hover)').matches) {
+  const cursorEl = document.getElementById('cursor');
+  const cursorDot = document.getElementById('cursor-dot');
+  let cx=0, cy=0;
+  document.addEventListener('mousemove', e => { cx=e.clientX; cy=e.clientY; cursorDot.style.left=cx+'px'; cursorDot.style.top=cy+'px'; });
+  function updateCursor() { cursorEl.style.left=cx+'px'; cursorEl.style.top=cy+'px'; requestAnimationFrame(updateCursor); }
+  updateCursor();
+}
 
 // --- Loading screen --------------------------------------------------
 setTimeout(() => {
