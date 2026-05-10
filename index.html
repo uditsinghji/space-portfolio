@@ -15,17 +15,16 @@
   * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
   html, body { width:100%; height:100%; overflow:hidden; background:#000; touch-action: pan-x pan-y; }
 
-  @media (hover: hover) {
-    body { cursor: none; }
-    #cursor, #cursor-dot { position:fixed; pointer-events:none; z-index:9999; }
-    #cursor { width:20px; height:20px; border:1px solid var(--cyan); border-radius:50%; transition:width 0.2s, height 0.2s; transform:translate(-50%,-50%); mix-blend-mode:screen; }
-    #cursor-dot { width:4px; height:4px; background:var(--cyan); border-radius:50%; box-shadow:0 0 8px var(--cyan); transform:translate(-50%,-50%); }
-    body.hovering #cursor { width:40px; height:40px; border-color:var(--magenta); border-width:2px; }
-  }
+  /* Custom cursor - always on desktop, hidden on touch */
+  #cursor, #cursor-dot { position:fixed; pointer-events:none; z-index:9999; }
+  #cursor { width:20px; height:20px; border:1px solid var(--cyan); border-radius:50%; transition:width 0.2s, height 0.2s; transform:translate(-50%,-50%); mix-blend-mode:screen; }
+  #cursor-dot { width:4px; height:4px; background:var(--cyan); border-radius:50%; box-shadow:0 0 8px var(--cyan); transform:translate(-50%,-50%); }
+  body.hovering #cursor { width:40px; height:40px; border-color:var(--magenta); border-width:2px; }
   @media (pointer: coarse) { #cursor, #cursor-dot { display:none; } }
 
   #canvas { position:fixed; top:0; left:0; width:100%; height:100%; }
 
+  /* all other styles remain exactly as before (no changes) */
   #hud-top {
     position:fixed; top:0; left:0; right:0; height:52px; z-index:100;
     background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
@@ -165,7 +164,8 @@
   }
   .gallery-grid img {
     width:100%; border-radius:12px; border:1px solid rgba(0,245,255,0.3);
-    transition:transform 0.2s; cursor:pointer;
+    transition:transform 0.2s;
+    cursor:pointer;
   }
   .gallery-grid img:hover { transform:scale(1.02); }
   .close-gallery {
@@ -572,7 +572,6 @@ function closePanel() {
 }
 
 function showAboutPanel() {
-  // Ensure that the about panel is displayed and other panels are hidden
   document.getElementById('about-panel').classList.add('open');
   document.getElementById('project-panel').classList.remove('open');
   document.getElementById('gallery-modal').classList.remove('open');
@@ -588,7 +587,9 @@ function showGallery(proj) {
       const img = document.createElement('img');
       img.src = imgSrc;
       img.alt = proj.title;
-      img.onerror = () => { img.style.display = 'none'; };
+      // Log errors to console for debugging
+      img.onerror = () => { console.warn('Failed to load image:', imgSrc); img.style.display = 'none'; };
+      img.onload = () => { console.log('Loaded:', imgSrc); };
       grid.appendChild(img);
     });
   }
@@ -636,14 +637,13 @@ function toDMS(deg, isRA) {
 }
 
 // --- Cursor (only on desktop) ----------------------------------------
-if (window.matchMedia('(hover: hover)').matches) {
-  const cursorEl = document.getElementById('cursor');
-  const cursorDot = document.getElementById('cursor-dot');
-  let cx=0, cy=0;
-  document.addEventListener('mousemove', e => { cx=e.clientX; cy=e.clientY; cursorDot.style.left=cx+'px'; cursorDot.style.top=cy+'px'; });
-  function updateCursor() { cursorEl.style.left=cx+'px'; cursorEl.style.top=cy+'px'; requestAnimationFrame(updateCursor); }
-  updateCursor();
-}
+// No need for conditional because CSS already hides on touch
+const cursorEl = document.getElementById('cursor');
+const cursorDot = document.getElementById('cursor-dot');
+let cx=0, cy=0;
+document.addEventListener('mousemove', e => { cx=e.clientX; cy=e.clientY; cursorDot.style.left=cx+'px'; cursorDot.style.top=cy+'px'; });
+function updateCursor() { cursorEl.style.left=cx+'px'; cursorEl.style.top=cy+'px'; requestAnimationFrame(updateCursor); }
+updateCursor();
 
 // --- Loading screen --------------------------------------------------
 setTimeout(() => {
