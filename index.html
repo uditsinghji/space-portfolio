@@ -27,7 +27,7 @@
 
   #canvas { position:fixed; top:0; left:0; width:100%; height:100%; }
 
-  /* HUD styles (unchanged) */
+  /* HUD styles */
   #hud-top {
     position:fixed; top:0; left:0; right:0; height:52px; z-index:100;
     background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
@@ -192,10 +192,12 @@
 <div id="hud-bottom"><div class="hint-text">// TAP OR CLICK SPACECRAFT · DRAG TO FLY · PINCH TO ZOOM</div></div>
 
 <div id="nav-dots">
-  <div class="nav-dot active" data-idx="0"><div class="nav-dot-label">ToulouseEye</div></div>
-  <div class="nav-dot" data-idx="1"><div class="nav-dot-label">Thruster CFD</div></div>
-  <div class="nav-dot" data-idx="2"><div class="nav-dot-label">Space Safety</div></div>
-  <div class="nav-dot" data-idx="3"><div class="nav-dot-label">Lunar Thermal</div></div>
+  <div class="nav-dot active" data-idx="0"><div class="nav-dot-label">OHB Internship</div></div>
+  <div class="nav-dot" data-idx="1"><div class="nav-dot-label">TVC Test Bench</div></div>
+  <div class="nav-dot" data-idx="2"><div class="nav-dot-label">ToulouseEye</div></div>
+  <div class="nav-dot" data-idx="3"><div class="nav-dot-label">Thruster CFD</div></div>
+  <div class="nav-dot" data-idx="4"><div class="nav-dot-label">Space Safety</div></div>
+  <div class="nav-dot" data-idx="5"><div class="nav-dot-label">Lunar Thermal</div></div>
 </div>
 <button id="about-btn">ABOUT ME</button>
 <div id="coords"><div id="coord-x">RA: 00h 00m 00s</div><div id="coord-y">DEC: +00° 00' 00"</div></div>
@@ -212,7 +214,7 @@
   <div class="about-body">
     <div class="about-row"><div class="about-label">CONTACT</div><div class="about-text">📧 udit@uni-bremen.de<br>📍 Bremen, Germany</div></div>
     <div class="about-row"><div class="about-label">EDUCATION</div><div class="about-text">MSc Space Engineering, Universität Bremen (2025–present)<br>B.E. Industrial & Production Engineering (2.1 German Grade)</div></div>
-    <div class="about-row"><div class="about-label">EXPERIENCE</div><div class="about-text">Intern @ Muon Technologies (Python automation) · CubeSat System Design · ISRO SAR Pipeline (+30% clarity) · Sustainable Satellite Materials</div></div>
+    <div class="about-row"><div class="about-label">EXPERIENCE</div><div class="about-text">System Engineering Intern @ OHB System AG (Exploration & In-Orbit Servicing) · Intern @ Muon Technologies (Python automation) · ISRO SAR Pipeline (+30% clarity)</div></div>
     <div class="about-row"><div class="about-label">SKILLS</div><div class="about-text">ECSS · AIT · Ansys FEA · SolidWorks · CATIA · Creo · Autodesk Fusion · Python · Agile/Scrum</div></div>
     <div class="about-row"><div class="about-label">LANGUAGES</div><div class="about-text">English (C1) · German (B1) · Hindi (Native)</div></div>
     <div class="about-row"><div class="about-label">ACHIEVEMENTS</div><div class="about-text">Russia Open Doors Scholarship (2024) · Türkiye Bursları (2016) · Published EV ATV research · Led 23‑member E‑BAJA team</div></div>
@@ -245,7 +247,6 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 
 // --- Mobile detection & performance tuning ---
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-// Reduced star counts for better performance
 const starCount = isMobile ? 600 : 1200;
 const starSize = isMobile ? 0.08 : 0.12;
 const pixelRatio = isMobile ? Math.min(window.devicePixelRatio, 1.5) : window.devicePixelRatio;
@@ -255,12 +256,12 @@ const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // softer shadows
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setPixelRatio(pixelRatio);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x010518);
-scene.fog = new THREE.FogExp2(0x010518, 0.004); // slightly reduced fog for clarity
+scene.fog = new THREE.FogExp2(0x010518, 0.004);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 if (isMobile) {
@@ -279,7 +280,6 @@ controls.panSpeed = isMobile ? 0.5 : 0.8;
 controls.zoomSpeed = isMobile ? 0.8 : 1.2;
 controls.target.set(0, 0.2, 0);
 
-// CSS2 renderer for labels
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
 labelRenderer.domElement.style.position = 'absolute';
@@ -302,7 +302,7 @@ const backLight = new THREE.PointLight(0xff8844, 0.3);
 backLight.position.set(1, 1, -5);
 scene.add(backLight);
 
-// --- Starfield (optimized) -------------------------------------------
+// --- Starfield --------------------------------------------------------
 const starGeometry = new THREE.BufferGeometry();
 const starPositions = new Float32Array(starCount * 3);
 for (let i = 0; i < starCount; i++) {
@@ -316,61 +316,58 @@ const stars = new THREE.Points(starGeometry, starMaterial);
 scene.add(stars);
 
 // --- Grid floor -------------------------------------------------------
-const gridHelper = new THREE.GridHelper(25, 30, 0x33aaff, 0x2277aa);
+const gridHelper = new THREE.GridHelper(35, 40, 0x33aaff, 0x2277aa);
 gridHelper.position.y = -1.5;
 gridHelper.material.transparent = true;
 gridHelper.material.opacity = 0.2;
 scene.add(gridHelper);
 
-// --- Project data with images for gallery (fixed ToulouseEye) --------
+// --- Project data -----------------------------------------------------
 const PROJECTS = [
+  { id:'ohb', category:'INDUSTRY · EXPERIENCE', title:'System Engineering Intern @ OHB',
+    desc:'Currently interning at OHB System AG in the Exploration & In-Orbit Servicing department. Supporting early-phase mission design, trade-off studies (Phases 0, A, B1), requirements engineering, and developing Python-based automation tools for risk assessment.',
+    tech:['MBSE','Trade-offs','Python','ECSS'],
+    externalLink:null, images: null,
+    color:0xffcc00, pos:{ x:-8.0, y:0.2, z:0 }, type:'station' },
+  { id:'tvc', category:'MASTER PROJECT · TEST BENCH', title:'TVC Rocket Gimbal Test Bench',
+    desc:'Designed a modular test bench for a Thrust Vector Control (TVC) rocket gimbal mechanism. Conducted structural and kinematic analysis to validate gimbal actuation under simulated thrust loads. Focused on precision alignment and rapid prototyping.',
+    tech:['SolidWorks','Kinematics','Ansys','TVC'],
+    externalLink:null, images: null,
+    color:0xff00ff, pos:{ x:-5.2, y:0.2, z:0 }, type:'cubesat' },
   { id:'toulouseeye', category:'STRUCTURAL · CUBESAT', title:'ToulouseEye: Payload Bracket',
     desc:'Flight-ready payload bracket for a 3U Earth observation CubeSat (10 m GSD from 500 km LEO). Withstands 12 g launch loads, maintains optical alignment within 0.1°, and conducts camera heat below 60 °C. Designed in SolidWorks, analysed in Ansys Workbench. AL6061-T6, mass-optimised with lightening pockets. Safety factor >15, first modal frequency 5299 Hz.',
     tech:['SolidWorks','Ansys','Modal','Thermal','AL6061'],
     externalLink: null,
-    // THREE IMAGES: CAD, FEA stress, thermal profile – adjust filenames to match your actual files
-    images: [
-      'details/toulouseeye_fea_stress.png',
-      'details/toulouseeye_thermal.png',
-      'details/toulouseeye3.png',
-      'details/toulouseeye_modal.png',
-    ],
-    color:0x3a86ff, pos:{ x:-4.0, y:0.2, z:0 }, type:'cubesat' },
+    images: ['details/toulouseeye_fea_stress.png','details/toulouseeye_thermal.png','details/toulouseeye3.png','details/toulouseeye_modal.png'],
+    color:0x3a86ff, pos:{ x:-2.0, y:0.2, z:0 }, type:'cubesat' },
   { id:'thruster', category:'CFD · MULTI-PHYSICS', title:'Thruster Plume Backflow Analysis',
     desc:'A PoC bridging continuum (CFD) and rarefied (DSMC) flow simulations. SimFlow/OpenFOAM for near-field, openPlumeCP for far-field backflow, MATLAB for coupling & validation. Demonstrated particle wrapping around a 0.5 mm nozzle lip causing spacecraft contamination.',
     tech:['OpenFOAM','DSMC','MATLAB','SolidWorks'],
     externalLink: null,
-    images: [
-      'details/thruster_geometry.png',
-      'details/thruster_cfd_contour.png',
-      'details/thruster_dsmc_particles.png'
-    ],
-    color:0xff6600, pos:{ x:-1.5, y:0.2, z:0 }, type:'thruster' },
+    images: ['details/thruster_geometry.png','details/thruster_cfd_contour.png','details/thruster_dsmc_particles.png'],
+    color:0xff6600, pos:{ x:1.2, y:0.2, z:0 }, type:'thruster' },
   { id:'safety', category:'SOFTWARE · MISSION', title:'Space Safety Mission Control',
     desc:'Interactive dashboard for collision probability, conjunction analysis, Clohessy-Wiltshire relative motion, tumbling debris capture (Euler\'s equations), AI-based risk forecasting, and mission-level recommendations. Built with Streamlit, Plotly, NumPy, SciPy. Deployed live: Reduces risk assessment from hours to seconds.',
     tech:['Streamlit','Plotly','NumPy','SciPy'],
     externalLink:'https://space-safety.streamlit.app/',
     images: null,
-    color:0x00ddaa, pos:{ x:1.2, y:0.1, z:0 }, type:'station' },
+    color:0x00ddaa, pos:{ x:4.5, y:0.1, z:0 }, type:'station' },
   { id:'lunar', category:'THERMAL · CFD', title:'Lunar Night Thermal Survival',
     desc:'Passive thermal control for lunar electronics during a 14-day night (336 h) using conjugate heat transfer in SimFlow. MLI blanket (ε=0.05) maintained component core at 255 K — 12% above failure threshold. Proved passive survival without active heating, saving mass and power budget for future lunar missions.',
     tech:['SimFlow','OpenFOAM','CHT','ParaView'],
     externalLink: null,
-    images: [
-      'details/lunar_mesh.png',
-      'details/lunar_temp_profile1.png'
-    ],
-    color:0xaa44ff, pos:{ x:3.8, y:-0.1, z:0 }, type:'lunar' }
+    images: ['details/lunar_mesh.png','details/lunar_temp_profile1.png'],
+    color:0xaa44ff, pos:{ x:7.5, y:-0.1, z:0 }, type:'lunar' }
 ];
 
-// --- Helper: make label (mobile‑sized) -------------------------------
+// --- Helper: make label ----------------------------------------------
 function makeLabel(text, colorHex) {
   const div = document.createElement('div');
   div.textContent = text;
   div.style.backgroundColor = 'rgba(0,0,0,0.7)';
   div.style.color = '#fff';
   div.style.fontFamily = 'Orbitron, monospace';
-  div.style.fontSize = isMobile ? '14px' : '12px';
+  div.style.fontSize = isMobile ? '12px' : '11px';
   div.style.fontWeight = 'bold';
   div.style.padding = isMobile ? '6px 14px' : '4px 12px';
   div.style.borderRadius = '20px';
@@ -380,7 +377,7 @@ function makeLabel(text, colorHex) {
   return new CSS2DObject(div);
 }
 
-// --- Build 3D objects (unchanged, kept functional) -------------------
+// --- Build 3D objects -------------------------------------------------
 const clickables = [];
 
 function buildCubesat(proj) {
@@ -400,9 +397,12 @@ function buildCubesat(proj) {
   const glowMat = new THREE.MeshBasicMaterial({ color:proj.color, transparent:true, opacity:0.3, side:THREE.BackSide });
   const glow = new THREE.Mesh(new THREE.SphereGeometry(0.95,16,16), glowMat);
   group.add(glow);
-  const label = makeLabel('ToulouseEye', '#3a86ff');
+  
+  // Use dynamic title for label
+  const label = makeLabel(proj.title.split(':')[0].split('@')[0], '#' + proj.color.toString(16).padStart(6, '0'));
   label.position.set(proj.pos.x, proj.pos.y+0.9, proj.pos.z);
   scene.add(label);
+  
   group.userData = { proj, floatOffset: Math.random()*Math.PI*2 };
   clickables.push(group);
 }
@@ -419,9 +419,11 @@ function buildThruster(proj) {
   scene.add(group);
   const glow = new THREE.Mesh(new THREE.SphereGeometry(1.0,16,16), new THREE.MeshBasicMaterial({ color:proj.color, transparent:true, opacity:0.25, side:THREE.BackSide }));
   group.add(glow);
-  const label = makeLabel('Thruster CFD', '#ff6600');
+  
+  const label = makeLabel(proj.title.split(':')[0], '#' + proj.color.toString(16).padStart(6, '0'));
   label.position.set(proj.pos.x, proj.pos.y+0.9, proj.pos.z);
   scene.add(label);
+  
   group.userData = { proj, floatOffset: Math.random()*Math.PI*2 };
   clickables.push(group);
 }
@@ -444,9 +446,11 @@ function buildStation(proj) {
   scene.add(group);
   const glow = new THREE.Mesh(new THREE.SphereGeometry(0.85,16,16), new THREE.MeshBasicMaterial({ color:proj.color, transparent:true, opacity:0.25, side:THREE.BackSide }));
   group.add(glow);
-  const label = makeLabel('Space Safety', '#00ddaa');
+  
+  const label = makeLabel(proj.title.split('@')[0], '#' + proj.color.toString(16).padStart(6, '0'));
   label.position.set(proj.pos.x, proj.pos.y+0.9, proj.pos.z);
   scene.add(label);
+  
   group.userData = { proj, floatOffset: Math.random()*Math.PI*2 };
   clickables.push(group);
 }
@@ -466,9 +470,11 @@ function buildLunar(proj) {
   scene.add(group);
   const glow = new THREE.Mesh(new THREE.SphereGeometry(0.9,16,16), new THREE.MeshBasicMaterial({ color:proj.color, transparent:true, opacity:0.2, side:THREE.BackSide }));
   group.add(glow);
-  const label = makeLabel('Lunar Thermal', '#aa44ff');
+  
+  const label = makeLabel(proj.title.split(':')[0], '#' + proj.color.toString(16).padStart(6, '0'));
   label.position.set(proj.pos.x, proj.pos.y+0.9, proj.pos.z);
   scene.add(label);
+  
   group.userData = { proj, floatOffset: Math.random()*Math.PI*2 };
   clickables.push(group);
 }
@@ -482,15 +488,15 @@ PROJECTS.forEach(p => {
 
 // About sphere
 const aboutSphere = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 32), new THREE.MeshStandardMaterial({ color:0xff44cc, emissive:0xff44aa, emissiveIntensity:0.4, metalness:0.2 }));
-aboutSphere.position.set(-5.8, 0.2, 0);
+aboutSphere.position.set(-10.5, 0.2, 0); // Moved further left
 scene.add(aboutSphere);
 const aboutLabel = makeLabel('ABOUT ME', '#ff44cc');
-aboutLabel.position.set(-5.8, 1.0, 0);
+aboutLabel.position.set(-10.5, 1.0, 0);
 scene.add(aboutLabel);
 aboutSphere.userData = { isAbout: true, floatOffset: Math.random()*Math.PI*2 };
 clickables.push(aboutSphere);
 
-// --- Raycaster & UI (touch + click) ----------------------------------
+// --- Raycaster & UI ---------------------------------------------------
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let hoveredObj = null;
@@ -621,7 +627,7 @@ document.getElementById('gallery-modal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('gallery-modal')) closeGallery();
 });
 
-// Nav dots (touch + click)
+// Nav dots
 document.querySelectorAll('.nav-dot').forEach((dot, idx) => {
   dot.addEventListener('click', () => {
     const proj = PROJECTS[idx];
@@ -648,7 +654,7 @@ function toDMS(deg, isRA) {
   return isRA ? `${h}h ${m}m ${s}s` : `${deg>=0?'+':'-'}${h}° ${m}' ${s}"`;
 }
 
-// --- Cursor (only on desktop) ----------------------------------------
+// --- Cursor -----------------------------------------------------------
 if (window.matchMedia('(hover: hover)').matches) {
   const cursorEl = document.getElementById('cursor');
   const cursorDot = document.getElementById('cursor-dot');
@@ -658,13 +664,13 @@ if (window.matchMedia('(hover: hover)').matches) {
   updateCursor();
 }
 
-// --- Loading screen --------------------------------------------------
+// --- Loading screen ---------------------------------------------------
 setTimeout(() => {
   const loading = document.getElementById('loading');
   if (loading) { loading.style.opacity = '0'; setTimeout(() => loading.style.display = 'none', 800); }
 }, 1500);
 
-// --- Animation loop -------------------------------------------------
+// --- Animation loop ---------------------------------------------------
 let time = 0;
 function animate() {
   requestAnimationFrame(animate);
